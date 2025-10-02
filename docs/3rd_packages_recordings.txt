@@ -1,0 +1,41 @@
+# 第三方依赖库记录 - Third-party Dependencies Recording
+# 格式：name:version:reason
+# Format: name:version:reason
+
+# AI 服务集成依赖 - AI Service Integration Dependencies
+com.theokanning.openai-gpt3-java:service:0.18.2:OpenAI API客户端，用于集成OpenAI GPT服务进行代码命名和注释生成
+com.azure:azure-ai-openai:1.0.0-beta.8:Azure OpenAI服务集成，提供企业级OpenAI API访问能力
+
+# 网络通信依赖 - Network Communication Dependencies  
+com.squareup.okhttp3:okhttp:4.12.0:高性能HTTP客户端，支持连接池、重试机制和异步请求
+com.squareup.retrofit2:retrofit:2.9.0:类型安全的REST客户端，简化API调用和响应处理
+com.squareup.retrofit2:converter-gson:2.9.0:Retrofit的Gson转换器，用于JSON序列化和反序列化
+
+# 序列化和工具依赖 - Serialization and Utility Dependencies
+org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2:Kotlin原生JSON序列化库，提供高性能的数据序列化能力
+com.github.ben-manes.caffeine:caffeine:3.1.8:高性能内存缓存库，用于缓存AI服务响应结果
+com.google.guava:guava:32.1.3-jre:Google核心库，包含RateLimiter等限流工具和通用工具类
+
+# 测试框架依赖 - Testing Framework Dependencies
+io.mockk:mockk:1.13.8:Kotlin模拟测试框架，专为Kotlin设计的测试Mock库
+org.junit.jupiter:junit-jupiter:5.10.1:现代化单元测试框架，支持参数化测试和扩展
+org.testcontainers:testcontainers:1.19.3:集成测试容器支持，用于测试外部服务依赖
+com.squareup.okhttp3:mockwebserver:4.12.0:Mock HTTP服务器，用于测试网络调用和API集成
+
+# 许可证说明 - License Information
+# - OpenAI GPT3 Java: MIT License - 兼容商业使用
+# - Azure OpenAI: MIT License - 兼容商业使用  
+# - OkHttp3: Apache License 2.0 - 兼容商业使用
+# - Retrofit2: Apache License 2.0 - 兼容商业使用
+# - Kotlinx Serialization: Apache License 2.0 - 兼容商业使用
+# - Caffeine: Apache License 2.0 - 兼容商业使用
+# - Guava: Apache License 2.0 - 兼容商业使用
+# - Mockk: Apache License 2.0 - 仅测试使用
+# - JUnit 5: Eclipse Public License 2.0 - 仅测试使用
+# - TestContainers: MIT License - 仅测试使用
+
+# 风险评估 - Risk Assessment
+# - 所有依赖均为成熟稳定的开源库，有活跃的社区维护
+# - AI服务依赖版本较新，需要关注API变化和兼容性
+# - 依赖总体积约30MB，在可接受范围内
+# - 无已知安全漏洞，但需要定期更新版本

@@ -1,0 +1,85 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>me.cw2.nym</id>
+    <name>Nym</name>
+    <vendor url="https://github.com/cw2me">cw2</vendor>
+    <description><![CDATA[
+        <h2>Nym：面向 IntelliJ IDEA 的 AI 命名与注释插件</h2>
+        <p>Nym 是一个轻量的 IntelliJ 平台插件，利用大语言模型（LLM）为你的代码提供更好的命名建议与文档注释生成，
+        并支持自定义生成与未使用代码分析。任务均在后台执行以保持 IDE 流畅，API Key 通过 IntelliJ Password Safe 安全保存。</p>
+        <ul>
+            <li><b>编辑器动作</b>：Generate Naming、Generate Comment、Custom Generate（右键与 Code 菜单）</li>
+            <li><b>工具动作</b>：Analyze Unused Code（Tools 菜单）</li>
+            <li><b>设置页</b>：Provider/Endpoint/Model/Temperature/API Key、超时与并发</li>
+            <li><b>工具窗口</b>：使用统计与 Token 计数，手动刷新</li>
+        </ul>
+        <p><b>环境要求</b>：IntelliJ IDEA 2025.1+（since-build 251），JDK 21。</p>
+    ]]></description>
+
+    <!-- 明确支持的 IntelliJ 平台版本范围，确保 K2 兼容性 -->
+    <idea-version since-build="251" until-build="252.*"/>
+
+    <!-- Resource bundle for i18n -->
+    <resource-bundle>messages.NymBundle</resource-bundle>
+
+    <depends>com.intellij.modules.platform</depends>
+    <!-- 依赖 Java 与 Kotlin 插件，确保 PSI 类可用且类加载顺序正确 -->
+    <depends>com.intellij.java</depends>
+    <!-- 明确支持 Kotlin K2 模式 -->
+    <depends>org.jetbrains.kotlin</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- ToolWindow 注册 -->
+        <toolWindow id="Nym" anchor="right" factoryClass="com.cw2.nym.presentation.toolwindow.NymToolWindowFactory" icon="/icons/nymToolWindow.svg"/>
+
+        <!-- 设置页面注册 -->
+        <applicationConfigurable id="nym.settings" displayName="Nym" instance="com.cw2.nym.presentation.settings.NymConfigurable"/>
+
+        <!-- 通知分组注册（使用稳定的分组ID，不随本地化变化） -->
+        <notificationGroup id="Nym.Notifications" displayType="BALLOON" isLogByDefault="true"/>
+
+
+        <!-- 启动时安装键入处理器（避免使用将移除的扩展点） -->
+        <postStartupActivity implementation="com.cw2.nym.platform.lifecycle.NymProjectActivity"/>
+
+        <!-- Live Template 自定义宏注册：用于 AI 注释生成占位与替换 -->
+        <liveTemplateMacro implementation="com.cw2.nym.presentation.templates.NymAiCommentMacro"/>
+    </extensions>
+
+    <extensions defaultExtensionNs="org.jetbrains.kotlin">
+        <supportsKotlinPluginMode supportsK2="true"/>
+    </extensions>
+
+    <actions>
+        <!-- 顶层 Nym 组（可用于扩展） -->
+        <group id="Nym.Actions" text="Nym" popup="true">
+            <action id="Nym.GenerateNaming" class="com.cw2.nym.presentation.actions.GenerateNamingAction" text="Generate Naming" description="Generate naming suggestions" icon="AllIcons.Actions.IntentionBulb"/>
+            <action id="Nym.GenerateComment" class="com.cw2.nym.presentation.actions.GenerateCommentAction" text="Generate Comment" description="Generate documentation" icon="AllIcons.Actions.IntentionBulb"/>
+            <action id="Nym.CustomGenerate" class="com.cw2.nym.presentation.actions.CustomGenerateAction" text="Nym: Custom Generate" description="Custom generate with context" icon="AllIcons.Actions.IntentionBulb"/>
+        </group>
+
+        <!-- 未使用代码扫描 Action -->
+        <action id="Nym.AnalyzeUnusedCode" class="com.cw2.nym.presentation.actions.AnalyzeUnusedCodeAction" text="Nym: Analyze Unused Code" description="Scan project for unused files/classes/methods">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+
+        <!-- 右键菜单集成 -->
+        <action id="Nym.GenerateNaming.Popup" class="com.cw2.nym.presentation.actions.GenerateNamingAction" text="Nym: Generate Naming" icon="AllIcons.Actions.IntentionBulb">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+        <action id="Nym.GenerateComment.Popup" class="com.cw2.nym.presentation.actions.GenerateCommentAction" text="Nym: Generate Comment" icon="AllIcons.Actions.IntentionBulb">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+        <action id="Nym.CustomGenerate.Popup" class="com.cw2.nym.presentation.actions.CustomGenerateAction" text="Nym: Custom Generate" icon="AllIcons.Actions.IntentionBulb">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+
+        <!-- Code 菜单集成 -->
+        <action id="Nym.GenerateNaming.CodeMenu" class="com.cw2.nym.presentation.actions.GenerateNamingAction" text="Nym: Generate Naming">
+            <add-to-group group-id="CodeMenu" anchor="last"/>
+        </action>
+        <action id="Nym.GenerateComment.CodeMenu" class="com.cw2.nym.presentation.actions.GenerateCommentAction" text="Nym: Generate Comment">
+            <add-to-group group-id="CodeMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>
