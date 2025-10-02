@@ -78,9 +78,14 @@ internal object UnusedCodeScanner {
         val psiManager = PsiManager.getInstance(project)
         val allVFiles = mutableListOf<com.intellij.openapi.vfs.VirtualFile>()
 
-        // 仅扫描 Kotlin 与 Java 源文件
-        allVFiles += FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)
-        allVFiles += FileTypeIndex.getFiles(JavaFileType.INSTANCE, scope)
+        // 仅扫描 Kotlin 与 Java 源文件（索引访问需在 ReadAction 内）
+        val indexedFiles = ReadAction.compute<List<com.intellij.openapi.vfs.VirtualFile>, Throwable> {
+            val list = mutableListOf<com.intellij.openapi.vfs.VirtualFile>()
+            list += FileTypeIndex.getFiles(KotlinFileType.INSTANCE, scope)
+            list += FileTypeIndex.getFiles(JavaFileType.INSTANCE, scope)
+            list
+        }
+        allVFiles += indexedFiles
 
         var scannedFiles = 0
         var scannedSymbols = 0
@@ -113,7 +118,7 @@ internal object UnusedCodeScanner {
         val fileUnusedSet = mutableSetOf<String>()
         for (vFile in allVFiles) {
             val path = vFile.path
-            val psiFile = psiManager.findFile(vFile) ?: continue
+            val psiFile = ReadAction.compute<PsiFile?, Throwable> { psiManager.findFile(vFile) } ?: continue
             val totalSymbols = countSymbolsInFile(psiFile)
             val unusedForFile = fileGroup[path]?.size ?: 0
             if (totalSymbols > 0 && unusedForFile >= totalSymbols) {
