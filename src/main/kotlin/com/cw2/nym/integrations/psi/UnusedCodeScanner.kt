@@ -3,6 +3,7 @@ package com.cw2.nym.integrations.psi
 import com.cw2.nym.core.logging.NymLogger
 import com.cw2.nym.core.result.Result
 import com.cw2.nym.core.exception.NymError
+import com.cw2.nym.presentation.messages.NymBundle
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.progress.ProgressManager
@@ -52,10 +53,10 @@ internal object UnusedCodeScanner {
      */
     fun scanInBackground(project: Project, onFinish: (Result<Report>) -> Unit) {
         DumbService.getInstance(project).runWhenSmart {
-            ProgressManager.getInstance().run(object : Task.Backgroundable(project, "Nym: 扫描未使用代码", true) {
+            ProgressManager.getInstance().run(object : Task.Backgroundable(project, NymBundle.message("action.analyzeUnused.text"), true) {
                 override fun run(indicator: ProgressIndicator) {
                     val res = try {
-                        indicator.text = "正在收集文件..."
+                        indicator.text = NymBundle.message("action.analyzeUnused.scan.tip")
                         val report = scan(project, indicator)
                         Result.Success(report)
                     } catch (t: Throwable) {
@@ -264,7 +265,7 @@ internal object UnusedCodeScanner {
         if (!outDir.exists()) outDir.mkdirs()
         val out = File(outDir, "nym-unused-report.txt")
         out.printWriter().use { pw ->
-            pw.println("Nym 未使用代码报告")
+            pw.println(NymBundle.message("action.analyzeUnused.report.title"))
             pw.println("Root: ${report.rootPath}")
             pw.println("Scanned Files: ${report.scannedFiles}, Symbols: ${report.scannedSymbols}")
             pw.println("Unused Count: ${report.unused.size}")
