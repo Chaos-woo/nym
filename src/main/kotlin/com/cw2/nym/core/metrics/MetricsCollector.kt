@@ -2,8 +2,7 @@ package com.cw2.nym.core.metrics
 
 import java.time.LocalDate
 import java.time.temporal.WeekFields
-import java.util.Locale
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.max
 
@@ -125,6 +124,7 @@ object MetricsCollector {
         val now = LocalDate.now()
         return now.get(wf.weekOfWeekBasedYear()) + now.year * 100
     }
+
     private fun currentYearMonth(): Int {
         val now = LocalDate.now()
         return now.year * 100 + now.monthValue
@@ -134,7 +134,7 @@ object MetricsCollector {
 /**
  * 指标快照
  */
- data class MetricsSnapshot(
+data class MetricsSnapshot(
     val today: Int,
     val total: Int,
     val successRate: Double,

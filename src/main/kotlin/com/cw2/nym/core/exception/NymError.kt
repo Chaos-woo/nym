@@ -2,7 +2,7 @@ package com.cw2.nym.core.exception
 
 /**
  * Nym 插件异常定义体系 - Exception definition system for Nym plugin
- * 
+ *
  * 使用密封类层次结构来定义所有可能的错误类型，提供类型安全的错误处理
  * Uses sealed class hierarchy to define all possible error types, providing type-safe error handling
  */
@@ -10,7 +10,7 @@ sealed class NymError(
     open val message: String,
     open val cause: Throwable? = null
 ) {
-    
+
     /**
      * 网络相关错误 - Network related errors
      */
@@ -18,7 +18,7 @@ sealed class NymError(
         override val message: String,
         override val cause: Throwable? = null
     ) : NymError(message, cause) {
-        
+
         /**
          * 连接超时错误 - Connection timeout error
          */
@@ -26,7 +26,7 @@ sealed class NymError(
             override val message: String = "网络连接超时",
             override val cause: Throwable? = null
         ) : NetworkError(message, cause)
-        
+
         /**
          * 读取超时错误 - Read timeout error
          */
@@ -34,7 +34,7 @@ sealed class NymError(
             override val message: String = "网络读取超时",
             override val cause: Throwable? = null
         ) : NetworkError(message, cause)
-        
+
         /**
          * 网络不可达错误 - Network unreachable error
          */
@@ -42,7 +42,7 @@ sealed class NymError(
             override val message: String = "网络不可达",
             override val cause: Throwable? = null
         ) : NetworkError(message, cause)
-        
+
         /**
          * 通用网络错误 - Generic network error
          */
@@ -51,7 +51,7 @@ sealed class NymError(
             override val cause: Throwable? = null
         ) : NetworkError(message, cause)
     }
-    
+
     /**
      * 认证相关错误 - Authentication related errors
      */
@@ -59,7 +59,7 @@ sealed class NymError(
         override val message: String,
         override val cause: Throwable? = null
     ) : NymError(message, cause) {
-        
+
         /**
          * API 密钥无效 - Invalid API key
          */
@@ -67,7 +67,7 @@ sealed class NymError(
             override val message: String = "API 密钥无效或已过期",
             override val cause: Throwable? = null
         ) : AuthenticationError(message, cause)
-        
+
         /**
          * API 密钥未配置 - API key not configured
          */
@@ -75,7 +75,7 @@ sealed class NymError(
             override val message: String = "API 密钥未配置",
             override val cause: Throwable? = null
         ) : AuthenticationError(message, cause)
-        
+
         /**
          * 权限不足 - Insufficient permissions
          */
@@ -84,7 +84,7 @@ sealed class NymError(
             override val cause: Throwable? = null
         ) : AuthenticationError(message, cause)
     }
-    
+
     /**
      * 限流相关错误 - Rate limiting related errors
      */
@@ -93,7 +93,7 @@ sealed class NymError(
         override val cause: Throwable? = null,
         open val retryAfter: Long? = null // 建议重试间隔，单位：毫秒
     ) : NymError(message, cause) {
-        
+
         /**
          * 请求频率过高 - Request rate too high
          */
@@ -102,7 +102,7 @@ sealed class NymError(
             override val cause: Throwable? = null,
             override val retryAfter: Long? = null
         ) : RateLimitError(message, cause, retryAfter)
-        
+
         /**
          * 配额已耗尽 - Quota exhausted
          */
@@ -112,7 +112,7 @@ sealed class NymError(
             override val retryAfter: Long? = null
         ) : RateLimitError(message, cause, retryAfter)
     }
-    
+
     /**
      * API 相关错误 - API related errors
      */
@@ -121,7 +121,7 @@ sealed class NymError(
         override val cause: Throwable? = null,
         open val httpCode: Int? = null
     ) : NymError(message, cause) {
-        
+
         /**
          * 服务器内部错误 - Server internal error
          */
@@ -130,7 +130,7 @@ sealed class NymError(
             override val cause: Throwable? = null,
             override val httpCode: Int = 500
         ) : APIError(message, cause, httpCode)
-        
+
         /**
          * 请求格式错误 - Bad request format
          */
@@ -139,7 +139,7 @@ sealed class NymError(
             override val cause: Throwable? = null,
             override val httpCode: Int = 400
         ) : APIError(message, cause, httpCode)
-        
+
         /**
          * 服务不可用 - Service unavailable
          */
@@ -148,7 +148,7 @@ sealed class NymError(
             override val cause: Throwable? = null,
             override val httpCode: Int = 503
         ) : APIError(message, cause, httpCode)
-        
+
         /**
          * 模型不支持 - Model not supported
          */
@@ -158,7 +158,7 @@ sealed class NymError(
             override val httpCode: Int? = null
         ) : APIError(message, cause, httpCode)
     }
-    
+
     /**
      * 解析相关错误 - Parsing related errors
      */
@@ -166,7 +166,7 @@ sealed class NymError(
         override val message: String,
         override val cause: Throwable? = null
     ) : NymError(message, cause) {
-        
+
         /**
          * JSON 解析错误 - JSON parsing error
          */
@@ -174,7 +174,7 @@ sealed class NymError(
             override val message: String = "JSON 数据解析失败",
             override val cause: Throwable? = null
         ) : ParseError(message, cause)
-        
+
         /**
          * 响应格式错误 - Response format error
          */
@@ -182,7 +182,7 @@ sealed class NymError(
             override val message: String = "AI 服务响应格式不正确",
             override val cause: Throwable? = null
         ) : ParseError(message, cause)
-        
+
         /**
          * 配置格式错误 - Configuration format error
          */
@@ -191,7 +191,7 @@ sealed class NymError(
             override val cause: Throwable? = null
         ) : ParseError(message, cause)
     }
-    
+
     /**
      * 平台相关错误 - Platform related errors
      */
@@ -199,7 +199,7 @@ sealed class NymError(
         override val message: String,
         override val cause: Throwable? = null
     ) : NymError(message, cause) {
-        
+
         /**
          * IDE 索引不可用 - IDE index unavailable
          */
@@ -207,7 +207,7 @@ sealed class NymError(
             override val message: String = "IDE 索引尚未准备就绪",
             override val cause: Throwable? = null
         ) : PlatformError(message, cause)
-        
+
         /**
          * 项目未打开 - Project not open
          */
@@ -215,7 +215,7 @@ sealed class NymError(
             override val message: String = "项目未打开或已关闭",
             override val cause: Throwable? = null
         ) : PlatformError(message, cause)
-        
+
         /**
          * 编辑器不可用 - Editor unavailable
          */
@@ -224,7 +224,7 @@ sealed class NymError(
             override val cause: Throwable? = null
         ) : PlatformError(message, cause)
     }
-    
+
     /**
      * 超时相关错误 - Timeout related errors
      */
@@ -234,7 +234,7 @@ sealed class NymError(
         open val timeoutMs: Long? = null,
         open val actualDurationMs: Long? = null
     ) : NymError(message, cause) {
-        
+
         /**
          * 操作超时 - Operation timeout
          */
@@ -244,7 +244,7 @@ sealed class NymError(
             override val timeoutMs: Long? = null,
             override val actualDurationMs: Long? = null
         ) : TimeoutError(message, cause, timeoutMs, actualDurationMs)
-        
+
         /**
          * 连接建立超时 - Connection establishment timeout
          */
@@ -254,7 +254,7 @@ sealed class NymError(
             override val timeoutMs: Long? = null,
             override val actualDurationMs: Long? = null
         ) : TimeoutError(message, cause, timeoutMs, actualDurationMs)
-        
+
         /**
          * 数据读取超时 - Data read timeout
          */
@@ -264,7 +264,7 @@ sealed class NymError(
             override val timeoutMs: Long? = null,
             override val actualDurationMs: Long? = null
         ) : TimeoutError(message, cause, timeoutMs, actualDurationMs)
-        
+
         /**
          * 整体请求超时 - Overall request timeout
          */
@@ -275,7 +275,7 @@ sealed class NymError(
             override val actualDurationMs: Long? = null
         ) : TimeoutError(message, cause, timeoutMs, actualDurationMs)
     }
-    
+
     /**
      * 操作取消错误 - Operation cancelled error
      */
@@ -283,7 +283,7 @@ sealed class NymError(
         override val message: String = "操作已取消",
         override val cause: Throwable? = null
     ) : NymError(message, cause)
-    
+
     /**
      * 未知错误 - Unknown error
      */
@@ -291,7 +291,7 @@ sealed class NymError(
         override val message: String = "未知错误",
         override val cause: Throwable? = null
     ) : NymError(message, cause)
-    
+
     /**
      * 获取友好的用户显示消息 - Get user-friendly display message
      */
@@ -313,7 +313,7 @@ sealed class NymError(
         is OperationCancelled -> "操作已取消"
         else -> message
     }
-    
+
     /**
      * 获取英文错误消息，避免日志乱码 - Get English error message to avoid log encoding issues
      */

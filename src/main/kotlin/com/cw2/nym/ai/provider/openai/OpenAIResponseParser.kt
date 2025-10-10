@@ -1,21 +1,20 @@
 package com.cw2.nym.ai.provider.openai
 
 import com.cw2.nym.ai.model.*
-import com.cw2.nym.core.result.Result
 import com.cw2.nym.core.exception.NymError
-import com.cw2.nym.core.serialization.fromJson
 import com.cw2.nym.core.logging.NymLogger
+import com.cw2.nym.core.result.Result
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
 /**
  * OpenAI 响应解析器
- * 
+ *
  * 负责解析 OpenAI API 的响应，将 JSON 格式的响应转换为具体的建议对象。
  * 包含对不同类型响应的解析逻辑和错误处理。
  */
 object OpenAIResponseParser {
-    
+
     /**
      * 解析命名建议响应
      */
@@ -23,20 +22,21 @@ object OpenAIResponseParser {
         return try {
             val content = response.choices.firstOrNull()?.message?.content
                 ?: return Result.error(NymError.ParseError.InvalidResponse("响应内容为空"))
-            
+
             NymLogger.debug("parseNamingResponse", "解析响应内容: $content")
-            
+
             // 尝试解析 JSON 响应
             val jsonResponse = parseJsonContent(content)
             if (jsonResponse.errorOrNull() != null) {
                 // 如果 JSON 解析失败，尝试解析纯文本响应
                 return parseNamingFromPlainText(content, context)
             }
-            val jsonElement = jsonResponse.getOrNull() ?: return Result.error(NymError.ParseError.JsonParse("JSON解析失败"))
-            
+            val jsonElement =
+                jsonResponse.getOrNull() ?: return Result.error(NymError.ParseError.JsonParse("JSON解析失败"))
+
             val suggestionsJson = jsonElement.jsonObject["suggestions"]?.jsonArray
                 ?: return Result.error(NymError.ParseError.InvalidResponse("响应中缺少 suggestions 字段"))
-            
+
             val suggestions = suggestionsJson.mapNotNull { suggestionJson ->
                 try {
                     parseSingleNamingSuggestion(suggestionJson.jsonObject, context)
@@ -45,11 +45,11 @@ object OpenAIResponseParser {
                     null
                 }
             }
-            
+
             if (suggestions.isEmpty()) {
                 return Result.error(NymError.ParseError.InvalidResponse("未能解析出有效的命名建议"))
             }
-            
+
             // 添加元数据
             val enrichedSuggestions = suggestions.map { suggestion ->
                 suggestion.copy(
@@ -61,16 +61,18 @@ object OpenAIResponseParser {
                     )
                 )
             }
-            
+
             Result.success(enrichedSuggestions)
-            
+
         } catch (e: Exception) {
-            NymLogger.logError("parseNamingResponse", NymError.ParseError.JsonParse(), 
-                context = mapOf("error" to e.message, "response" to response.toString()))
+            NymLogger.logError(
+                "parseNamingResponse", NymError.ParseError.JsonParse(),
+                context = mapOf("error" to e.message, "response" to response.toString())
+            )
             Result.error(NymError.ParseError.JsonParse("解析命名建议响应失败: ${e.message}"))
         }
     }
-    
+
     /**
      * 解析注释建议响应
      */
@@ -78,23 +80,24 @@ object OpenAIResponseParser {
         return try {
             val content = response.choices.firstOrNull()?.message?.content
                 ?: return Result.error(NymError.ParseError.InvalidResponse("响应内容为空"))
-            
+
             NymLogger.debug("parseCommentResponse", "解析响应内容: $content")
-            
+
             // 尝试解析 JSON 响应
             val jsonResponse = parseJsonContent(content)
             if (jsonResponse.errorOrNull() != null) {
                 // 如果 JSON 解析失败，使用纯文本作为注释内容
                 return parseCommentFromPlainText(content, context)
             }
-            val jsonElement = jsonResponse.getOrNull() ?: return Result.error(NymError.ParseError.JsonParse("JSON解析失败"))
-            
+            val jsonElement =
+                jsonResponse.getOrNull() ?: return Result.error(NymError.ParseError.JsonParse("JSON解析失败"))
+
             val commentContent = jsonElement.jsonObject["content"]?.jsonPrimitive?.content
                 ?: return Result.error(NymError.ParseError.InvalidResponse("响应中缺少 content 字段"))
-            
+
             // 解析结构化信息
             val structure = parseCommentStructure(jsonElement.jsonObject)
-            
+
             val commentSuggestion = CommentSuggestion(
                 content = commentContent,
                 format = determineCommentFormat(context),
@@ -109,16 +112,18 @@ object OpenAIResponseParser {
                     contextHash = generateContextHash(context)
                 )
             )
-            
+
             Result.success(commentSuggestion)
-            
+
         } catch (e: Exception) {
-            NymLogger.logError("parseCommentResponse", NymError.ParseError.JsonParse(), 
-                context = mapOf("error" to e.message))
+            NymLogger.logError(
+                "parseCommentResponse", NymError.ParseError.JsonParse(),
+                context = mapOf("error" to e.message)
+            )
             Result.error(NymError.ParseError.JsonParse("解析注释建议响应失败: ${e.message}"))
         }
     }
-    
+
     /**
      * 解析自定义生成响应
      */
@@ -126,16 +131,18 @@ object OpenAIResponseParser {
         return try {
             val content = response.choices.firstOrNull()?.message?.content
                 ?: return Result.error(NymError.ParseError.InvalidResponse("响应内容为空"))
-            
+
             Result.success(content.trim())
-            
+
         } catch (e: Exception) {
-            NymLogger.logError("parseCustomResponse", NymError.ParseError.JsonParse(), 
-                context = mapOf("error" to e.message))
+            NymLogger.logError(
+                "parseCustomResponse", NymError.ParseError.JsonParse(),
+                context = mapOf("error" to e.message)
+            )
             Result.error(NymError.ParseError.JsonParse("解析自定义响应失败: ${e.message}"))
         }
     }
-    
+
     /**
      * 解析 JSON 内容
      */
@@ -144,32 +151,32 @@ object OpenAIResponseParser {
             val cleanContent = content.trim()
             val jsonStart = cleanContent.indexOf('{')
             val jsonEnd = cleanContent.lastIndexOf('}')
-            
+
             if (jsonStart == -1 || jsonEnd == -1) {
                 return Result.error(NymError.ParseError.JsonParse("未找到有效的 JSON 内容"))
             }
-            
+
             val jsonContent = cleanContent.substring(jsonStart, jsonEnd + 1)
             Result.success(Json.parseToJsonElement(jsonContent))
-            
+
         } catch (e: Exception) {
             Result.error(NymError.ParseError.JsonParse("JSON 解析失败: ${e.message}"))
         }
     }
-    
+
     /**
      * 解析单个命名建议
      */
     private fun parseSingleNamingSuggestion(jsonObject: JsonObject, context: CodeContext): NamingSuggestion {
         val name = jsonObject["name"]?.jsonPrimitive?.content
             ?: throw IllegalArgumentException("建议中缺少 name 字段")
-        
+
         val description = jsonObject["description"]?.jsonPrimitive?.content
             ?: throw IllegalArgumentException("建议中缺少 description 字段")
-        
+
         val score = jsonObject["score"]?.jsonPrimitive?.doubleOrNull ?: 0.8
         val reasoning = jsonObject["reasoning"]?.jsonPrimitive?.content
-        
+
         return NamingSuggestion(
             name = name,
             description = description,
@@ -180,7 +187,7 @@ object OpenAIResponseParser {
             reasoning = reasoning
         )
     }
-    
+
     /**
      * 从纯文本解析命名建议
      */
@@ -188,14 +195,14 @@ object OpenAIResponseParser {
         return try {
             val suggestions = mutableListOf<NamingSuggestion>()
             val lines = content.lines().filter { it.isNotBlank() }
-            
+
             lines.forEach { line ->
                 // 尝试解析 "名称 - 描述" 格式
                 val parts = line.split(" - ", limit = 2)
                 if (parts.size == 2) {
                     val name = parts[0].trim().removePrefix("•").removePrefix("-").removePrefix("*").trim()
                     val description = parts[1].trim()
-                    
+
                     if (name.isNotBlank() && description.isNotBlank()) {
                         suggestions.add(
                             NamingSuggestion(
@@ -210,18 +217,18 @@ object OpenAIResponseParser {
                     }
                 }
             }
-            
+
             if (suggestions.isEmpty()) {
                 return Result.error(NymError.ParseError.InvalidResponse("无法从纯文本中解析出命名建议"))
             }
-            
+
             Result.success(suggestions)
-            
+
         } catch (e: Exception) {
             Result.error(NymError.ParseError.InvalidResponse("纯文本解析失败: ${e.message}"))
         }
     }
-    
+
     /**
      * 从纯文本解析注释建议
      */
@@ -238,14 +245,14 @@ object OpenAIResponseParser {
                     contextHash = generateContextHash(context)
                 )
             )
-            
+
             Result.success(commentSuggestion)
-            
+
         } catch (e: Exception) {
             Result.error(NymError.ParseError.InvalidResponse("纯文本注释解析失败: ${e.message}"))
         }
     }
-    
+
     /**
      * 解析注释结构
      */
@@ -257,32 +264,32 @@ object OpenAIResponseParser {
                 val description = paramObj["description"]?.jsonPrimitive?.content ?: return@mapNotNull null
                 ParameterComment(name = name, description = description)
             } ?: emptyList()
-            
+
             val returnDescription = jsonObject["returnDescription"]?.jsonPrimitive?.content
-            
+
             val exceptions = jsonObject["exceptions"]?.jsonArray?.mapNotNull { exceptionJson ->
                 val exceptionObj = exceptionJson.jsonObject
                 val type = exceptionObj["type"]?.jsonPrimitive?.content ?: return@mapNotNull null
                 val description = exceptionObj["description"]?.jsonPrimitive?.content ?: return@mapNotNull null
                 ExceptionComment(type = type, description = description)
             } ?: emptyList()
-            
+
             if (parameters.isEmpty() && returnDescription == null && exceptions.isEmpty()) {
                 return null
             }
-            
+
             CommentStructure(
                 parameters = parameters,
                 returnDescription = returnDescription,
                 exceptions = exceptions
             )
-            
+
         } catch (e: Exception) {
             NymLogger.warn("parseCommentStructure", "解析注释结构失败: ${e.message}")
             null
         }
     }
-    
+
     /**
      * 确定命名约定
      */
@@ -291,18 +298,19 @@ object OpenAIResponseParser {
         context.surroundingContext.namingPatterns?.conventionType?.let { convention ->
             return convention
         }
-        
+
         // 基于名称本身推断
         return when {
-            name.contains("_") && name.all { it.isUpperCase() || it == '_' || it.isDigit() } -> 
+            name.contains("_") && name.all { it.isUpperCase() || it == '_' || it.isDigit() } ->
                 NamingConvention.UPPER_SNAKE_CASE
+
             name.contains("_") -> NamingConvention.SNAKE_CASE
             name.contains("-") -> NamingConvention.KEBAB_CASE
             name.first().isUpperCase() -> NamingConvention.PASCAL_CASE
             else -> NamingConvention.CAMEL_CASE
         }
     }
-    
+
     /**
      * 确定注释格式
      */
@@ -314,7 +322,7 @@ object OpenAIResponseParser {
             else -> CommentFormat.JAVADOC
         }
     }
-    
+
     /**
      * 生成上下文哈希值
      */
@@ -328,11 +336,13 @@ object OpenAIResponseParser {
                     append(context.parameters.size)
                     append(context.returnType.typeName)
                 }
+
                 is ClassContext -> {
                     append(context.className)
                     append(context.packageName)
                     append(context.methods.size)
                 }
+
                 is VariableContext -> {
                     append(context.variableName)
                     append(context.variableType.typeName)
@@ -340,7 +350,7 @@ object OpenAIResponseParser {
                 }
             }
         }
-        
+
         return contextString.hashCode().toString(16)
     }
 }

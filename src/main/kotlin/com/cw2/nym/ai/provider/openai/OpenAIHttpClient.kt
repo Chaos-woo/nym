@@ -1,50 +1,49 @@
 package com.cw2.nym.ai.provider.openai
 
-import com.cw2.nym.core.result.Result
 import com.cw2.nym.core.exception.NymError
 import com.cw2.nym.core.logging.NymLogger
-import com.cw2.nym.core.serialization.toJson
+import com.cw2.nym.core.result.Result
 import com.cw2.nym.core.serialization.fromJson
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.json.JsonElement
+import com.cw2.nym.core.serialization.toJson
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.net.URI
 import java.time.Duration
 
 /**
  * OpenAI API HTTP 客户端
- * 
+ *
  * 负责与 OpenAI API 的网络通信，包括请求发送、响应处理、错误处理等。
  * 支持重试机制、超时控制和详细的日志记录。
  */
 class OpenAIHttpClient(
     private val config: OpenAIConfig
 ) {
-    
+
     private val httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofMillis(config.timeoutMs))
         .build()
-    
+
     /**
      * 发送请求到 OpenAI API
-     * 
+     *
      * @param request 请求数据
      * @return API 响应结果
      */
     suspend fun sendRequest(request: OpenAIRequest): Result<OpenAIResponse> {
         return try {
             val startTime = System.currentTimeMillis()
-            
+
             withTimeout(config.timeoutMs) {
                 val httpRequest = buildHttpRequest(request)
                 val httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString())
-                
+
                 val duration = System.currentTimeMillis() - startTime
-                
+
                 when (httpResponse.statusCode()) {
                     200 -> {
                         val response = parseSuccessResponse(httpResponse.body())
@@ -58,23 +57,28 @@ class OpenAIHttpClient(
                         )
                         response
                     }
+
                     400 -> {
                         NymLogger.logError("sendRequest", NymError.APIError.BadRequest())
                         Result.error(NymError.APIError.BadRequest("请求格式错误: ${httpResponse.body()}"))
                     }
+
                     401 -> {
                         NymLogger.logError("sendRequest", NymError.AuthenticationError.InvalidApiKey())
                         Result.error(NymError.AuthenticationError.InvalidApiKey())
                     }
+
                     429 -> {
                         val retryAfter = parseRetryAfter(httpResponse.headers().map())
                         NymLogger.logError("sendRequest", NymError.RateLimitError.TooManyRequests())
                         Result.error(NymError.RateLimitError.TooManyRequests(retryAfter = retryAfter))
                     }
+
                     500, 502, 503, 504 -> {
                         NymLogger.logError("sendRequest", NymError.APIError.ServerError())
                         Result.error(NymError.APIError.ServerError("服务器错误: ${httpResponse.statusCode()}"))
                     }
+
                     else -> {
                         val error = NymError.APIError.ServerError("未知错误: ${httpResponse.statusCode()}")
                         NymLogger.logError("sendRequest", error)
@@ -92,13 +96,13 @@ class OpenAIHttpClient(
             Result.error(error)
         }
     }
-    
+
     /**
      * 构建 HTTP 请求
      */
     private fun buildHttpRequest(request: OpenAIRequest): HttpRequest {
         val jsonBody = request.toJson().getOrNull() ?: throw IllegalArgumentException("无法序列化请求")
-        
+
         return HttpRequest.newBuilder()
             .uri(URI.create("${config.apiUrl}/chat/completions"))
             .header("Content-Type", "application/json")
@@ -108,7 +112,7 @@ class OpenAIHttpClient(
             .timeout(Duration.ofMillis(config.timeoutMs))
             .build()
     }
-    
+
     /**
      * 解析成功响应
      */
@@ -121,22 +125,22 @@ class OpenAIHttpClient(
             Result.error(error)
         }
     }
-    
+
     /**
      * 同步发送请求到 OpenAI API（用于后台线程调用，避免 runBlocking 导致的线程模型违规）
-     * 
+     *
      * @param request 请求数据
      * @return API 响应结果
      */
     fun sendRequestSync(request: OpenAIRequest): Result<OpenAIResponse> {
         return try {
             val startTime = System.currentTimeMillis()
-            
+
             val httpRequest = buildHttpRequest(request)
             val httpResponse = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString())
-            
+
             val duration = System.currentTimeMillis() - startTime
-            
+
             when (httpResponse.statusCode()) {
                 200 -> {
                     val response = parseSuccessResponse(httpResponse.body())
@@ -150,23 +154,28 @@ class OpenAIHttpClient(
                     )
                     response
                 }
+
                 400 -> {
                     NymLogger.logError("sendRequestSync", NymError.APIError.BadRequest())
                     Result.error(NymError.APIError.BadRequest("请求格式错误: ${httpResponse.body()}"))
                 }
+
                 401 -> {
                     NymLogger.logError("sendRequestSync", NymError.AuthenticationError.InvalidApiKey())
                     Result.error(NymError.AuthenticationError.InvalidApiKey())
                 }
+
                 429 -> {
                     val retryAfter = parseRetryAfter(httpResponse.headers().map())
                     NymLogger.logError("sendRequestSync", NymError.RateLimitError.TooManyRequests())
                     Result.error(NymError.RateLimitError.TooManyRequests(retryAfter = retryAfter))
                 }
+
                 500, 502, 503, 504 -> {
                     NymLogger.logError("sendRequestSync", NymError.APIError.ServerError())
                     Result.error(NymError.APIError.ServerError("服务器错误: ${httpResponse.statusCode()}"))
                 }
+
                 else -> {
                     val error = NymError.APIError.ServerError("未知错误: ${httpResponse.statusCode()}")
                     NymLogger.logError("sendRequestSync", error)
@@ -183,7 +192,7 @@ class OpenAIHttpClient(
             Result.error(error)
         }
     }
-    
+
     /**
      * 解析 Retry-After 头部
      */
@@ -199,12 +208,15 @@ class OpenAIHttpClient(
 data class OpenAIRequest(
     val model: String,
     val messages: List<OpenAIMessage>,
+    @SerialName("max_tokens")
     val maxTokens: Int? = null,
     val temperature: Double? = null,
     val topP: Double? = null,
     val n: Int = 1,
     val stop: List<String>? = null,
+    @SerialName("presence_penalty")
     val presencePenalty: Double? = null,
+    @SerialName("frequency_penalty")
     val frequencyPenalty: Double? = null,
     val user: String? = null
 )

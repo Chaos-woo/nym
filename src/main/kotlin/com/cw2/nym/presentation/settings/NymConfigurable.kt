@@ -70,7 +70,7 @@ class NymConfigurable : Configurable {
     // - 仅做基本 UI 绑定，不在此处引入实际的限流/超时联动，避免超出本次改动范围
     private val perfSectionLabel = JLabel(NymBundle.message("settings.perf.section"))
     private val timeoutLabel = JLabel(NymBundle.message("settings.perf.timeout"))
-    private val timeoutSpinner = JSpinner(SpinnerNumberModel(30000, 1000, 120000, 1000))
+    private val timeoutSpinner = JSpinner(SpinnerNumberModel(30000, 1000, 600000, 1000))
     private val concurrentLabel = JLabel(NymBundle.message("settings.perf.maxConcurrent"))
     private val concurrentSpinner = JSpinner(SpinnerNumberModel(6, 1, 32, 1))
     private val cacheMaxLabel = JLabel(NymBundle.message("settings.perf.cacheMaxEntries"))

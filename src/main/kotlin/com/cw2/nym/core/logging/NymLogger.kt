@@ -146,7 +146,7 @@ object NymLogger {
                 else -> "缓慢"
             }
         )
-        
+
         when {
             durationMs < 1000 -> debug(operation, message, perfContext)
             durationMs < 5000 -> info(operation, message, perfContext)
