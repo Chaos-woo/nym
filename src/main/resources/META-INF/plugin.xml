@@ -3,6 +3,7 @@
     <id>me.cw2.nym</id>
     <name>Nym</name>
     <vendor url="https://github.com/cw2me">cw2</vendor>
+    <version>1.0.1</version>
     <description><![CDATA[
         <h2>Nym：面向 IntelliJ IDEA 的 AI 命名与注释插件</h2>
         <p>Nym 是一个轻量的 IntelliJ 平台插件，利用大语言模型（LLM）为你的代码提供更好的命名建议与文档注释生成，
